@@ -5,7 +5,7 @@ MAKEFLAGS += --no-builtin-rules --no-builtin-variables
 .PHONY: all clean
 
 # source files
-SRC_FILES := app.lua xml.lua main.lua
+SRC_FILES := app.lua main.lua
 
 # binaries
 BIN := ria-rss
@@ -25,9 +25,3 @@ $(BIN): $(SRC_FILES)
 # clean up
 clean:
 	rm -f $(BIN)
-
-# SLAXML library static import
-xml.lua: SLAXML/slaxml.lua
-	echo "xml = (function()\n" > $@
-	sed -E -e 's/^/\t/' -e 's/[[:blank:]]+$$//' $^ >> $@
-	echo "\nend)()" >> $@
