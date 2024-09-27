@@ -1,72 +1,8 @@
--- trim whitespace from both ends of the string
+-- [global] trim whitespace from both ends of the string
 function string.trim(s)
 	-- see trim12 from http://lua-users.org/wiki/StringTrim
 	local i = s:match("^%s*()")
 	return i > #s and "" or s:match(".*%S", i)
-end
-
--- application
-do
-	-- os.exit replacement
-	local _real_exit = os.exit
-
-	function os.exit(code)
-		if type(code) == "boolean" then
-			code = code and 0 or 1
-		elseif math.type(code) ~= "integer" then
-			code = 0
-		end
-
-		error(code, 0)
-	end
-
-	-- print message to STDERR
-	local function _print(kind, msg, ...)
-		return io.stderr:write(
-			app.name,
-			": [", kind, "] ",
-			(select("#", ...) > 0 and msg:format(...) or msg):trim(),
-			"\n"
-		)
-	end
-
-	-- [global] application
-	app = {
-		-- application name
-		name = arg[0]:match("[^/]+$"),
-
-		-- status reporting
-		info = function(msg, ...) return just(_print("info", msg, ...)) end,
-		warn = function(msg, ...) return just(_print("warn", msg, ...)) end,
-
-		-- application failure
-		fail = function(msg, ...)
-			if type(msg) == "string" and select("#", ...) > 0 then
-				msg = msg:format(...)
-			end
-
-			error(msg, 0)
-		end,
-
-		-- application exit
-		exit = os.exit,
-
-		-- application runner (never returns)
-		run = function(fn, ...)
-			local ok, err = pcall(fn, ...)
-
-			if ok then
-				_real_exit(true)
-			end
-
-			if math.type(err) == "integer" then
-				_real_exit(err)
-			end
-
-			_print("error", tostring(err))
-			_real_exit(false)
-		end,
-	}
 end
 
 -- [global] shell quoting
@@ -152,4 +88,55 @@ do
 		-- invoke fn
 		return with(tmp:gsub("%s+$", ""), _rm_dir, fn, ...)
 	end
+end
+
+-- application
+do
+	-- application name
+	local _app_name = arg[0]:match("[^/]+$")
+
+	-- print message to STDERR
+	local function _print(kind, msg, ...)
+		return io.stderr:write(
+			_app_name,
+			": [", kind, "] ",
+			(select("#", ...) > 0 and msg:format(...) or msg):trim(),
+			"\n"
+		)
+	end
+
+	-- [global] application
+	app = {
+		-- application name
+		name = _app_name,
+
+		-- status reporting
+		info = function(msg, ...) return just(_print("info", msg, ...)) end,
+		warn = function(msg, ...) return just(_print("warn", msg, ...)) end,
+
+		-- application failure
+		fail = function(msg, ...)
+			if type(msg) == "string" and select("#", ...) > 0 then
+				msg = msg:format(...)
+			end
+
+			error(msg, 0)
+		end,
+
+		-- application runner (never returns)
+		run = function(fn, ...)
+			local ok, err = pcall(fn, ...)
+
+			if ok then
+				os.exit(true)
+			end
+
+			if math.type(err) == "integer" then
+				os.exit(err)
+			end
+
+			_print("error", tostring(err))
+			os.exit(false)
+		end,
+	}
 end
