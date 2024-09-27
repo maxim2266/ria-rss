@@ -1,0 +1,5 @@
+XML tools:
+	xmllint (sudo apt install libxml2-utils)
+	xmllint --nonet --noblanks --xpath '//item/title | //item/link | //item/guid | //item/pubDate' rss.xml
+
+	hxselect 'item' < rss.xml | hxremove 'rian\:type,rian\:priority' | hxremove 'category,enclosure'
