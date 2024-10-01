@@ -5,7 +5,7 @@ MAKEFLAGS += --no-builtin-rules --no-builtin-variables
 .PHONY: all clean
 
 # source files
-SRC_FILES := app.lua main.lua
+SRC_FILES := app.lua xml.lua main.lua
 
 # binaries
 BIN := ria-rss

@@ -139,4 +139,42 @@ do
 			os.exit(false)
 		end,
 	}
+
+	-- XDG
+	local _home = os.getenv("HOME")
+
+	local _xdg_path_map = {
+		data =   { "XDG_DATA_HOME",   _home .. "/.local/share/" .. app.name .. "/" },
+		config = { "XDG_CONFIG_HOME", _home .. "/.config/" .. app.name .. "/" },
+		state =  { "XDG_STATE_HOME",  _home .. "/.local/state/" .. app.name .. "/" },
+		cache =  { "XDG_CACHE_HOME",  _home .. "/.cache/" .. app.name .. "/" }
+	}
+
+	-- application directories (XDG)
+	app.dirs = {}
+
+	-- meta-table for app.dirs (lazy creation of directories)
+	setmetatable(app.dirs, {
+		__index = function(t, k)
+			local info = _xdg_path_map[k]
+
+			if info then
+				-- directory: environment or default
+				local dir = os.getenv(info[1])
+
+				if not dir or #dir == 0 then
+					dir = info[2]
+				elseif not dir:find("/", #dir, true) then
+					dir = dir .. '/'
+				end
+
+				-- make sure the directory exists
+				just(os.execute("mkdir -p " .. Q(dir)))
+
+				-- update main table
+				t[k] = dir
+				return dir
+			end
+		end
+	})
 end
