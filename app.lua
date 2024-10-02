@@ -86,7 +86,7 @@ do
 		just(cmd:close())
 
 		-- invoke fn
-		return with(tmp:gsub("%s+$", ""), _rm_dir, fn, ...)
+		return with(tmp:gsub("%s+$", ""):gsub("[^/]$", "%0/"), _rm_dir, fn, ...)
 	end
 end
 
@@ -109,6 +109,12 @@ do
 	app = {
 		-- application name
 		name = _app_name,
+
+		-- application version
+		version = "0.0.1",
+
+		-- application directories (XDG)
+		dirs = {},
 
 		-- status reporting
 		info = function(msg, ...) return just(_print("info", msg, ...)) end,
@@ -150,9 +156,6 @@ do
 		cache =  { "XDG_CACHE_HOME",  _home .. "/.cache/" .. app.name .. "/" }
 	}
 
-	-- application directories (XDG)
-	app.dirs = {}
-
 	-- meta-table for app.dirs (lazy creation of directories)
 	setmetatable(app.dirs, {
 		__index = function(t, k)
@@ -162,10 +165,12 @@ do
 				-- directory: environment or default
 				local dir = os.getenv(info[1])
 
+				if dir then
+					dir = dir:trim():gsub("[^/]$", "%0/")
+				end
+
 				if not dir or #dir == 0 then
 					dir = info[2]
-				elseif not dir:find("/", #dir, true) then
-					dir = dir .. '/'
 				end
 
 				-- make sure the directory exists
