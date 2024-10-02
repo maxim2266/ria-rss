@@ -86,7 +86,7 @@ do
 		just(cmd:close())
 
 		-- invoke fn
-		return with(tmp:gsub("%s+$", ""):gsub("[^/]$", "%0/"), _rm_dir, fn, ...)
+		return with(tmp:gsub("/*%s*$", ""), _rm_dir, fn, ...)
 	end
 end
 
@@ -150,10 +150,10 @@ do
 	local _home = os.getenv("HOME")
 
 	local _xdg_path_map = {
-		data =   { "XDG_DATA_HOME",   _home .. "/.local/share/" .. app.name .. "/" },
-		config = { "XDG_CONFIG_HOME", _home .. "/.config/" .. app.name .. "/" },
-		state =  { "XDG_STATE_HOME",  _home .. "/.local/state/" .. app.name .. "/" },
-		cache =  { "XDG_CACHE_HOME",  _home .. "/.cache/" .. app.name .. "/" }
+		data =   { "XDG_DATA_HOME",   _home .. "/.local/share/" .. app.name },
+		config = { "XDG_CONFIG_HOME", _home .. "/.config/" .. app.name },
+		state =  { "XDG_STATE_HOME",  _home .. "/.local/state/" .. app.name },
+		cache =  { "XDG_CACHE_HOME",  _home .. "/.cache/" .. app.name }
 	}
 
 	-- meta-table for app.dirs (lazy creation of directories)
@@ -166,7 +166,7 @@ do
 				local dir = os.getenv(info[1])
 
 				if dir then
-					dir = dir:trim():gsub("[^/]$", "%0/")
+					dir = dir:trim():gsub("/+$", "")
 				end
 
 				if not dir or #dir == 0 then
