@@ -111,7 +111,7 @@ do
 		name = _app_name,
 
 		-- application version
-		version = "0.0.1",
+		version = "0.5.0",
 
 		-- application directories (XDG)
 		dirs = {},

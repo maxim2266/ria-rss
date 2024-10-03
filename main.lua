@@ -1,3 +1,13 @@
+-- read all content
+local function read_all(stream) --> string
+	return with(stream, io.close, function(src) return src:read("a") or "" end)
+end
+
+-- read all content from the given file
+local function read_all_file(fname)
+	return read_all(just(io.open(fname)))
+end
+
 -- ensure string is not nil or empty
 local function non_empty(s) --> string
 	if not s or #s == 0 then
@@ -11,9 +21,7 @@ end
 local function read_rss() --> items: { news_key -> news_item }
 	-- read content from STDIN
 	local cmd = "xmllint --nonet --noblanks --nocdata --xpath '//item' -"
-	local rss = with(just(io.popen(cmd)), io.close, function(src)
-		return src:read("a")
-	end)
+	local rss = read_all(just(io.popen(cmd)))
 
 	-- check what we've got
 	rss = rss:trim()
@@ -80,7 +88,6 @@ do
 			| hxselect -i 'div[data-type="text"],div[data-type="quote"]'	\
 			| hxremove -i 'div.article__quote-bg,strong'	\
 			| sed -E -e 's|</?[[:alpha:]][^>]*>||g' -e 's/^[[:blank:]]+//' -e 's/\.\.\./…/g'	\
-			| cat -s	\
 			| hxunent -b -f > "$dest/$fname"
 
 			echo '+'
@@ -100,8 +107,8 @@ done
 local function write_extractor_script(fname)
 	app.info("writing extractor script to %q", fname)
 
-	with(just(io.open(fname, "w")), io.close, function(script)
-		just(script:write(extractor_script))
+	with(just(io.open(fname, "w")), io.close, function(dest)
+		return dest:write(extractor_script)
 	end)
 end
 
@@ -123,9 +130,7 @@ local function write_curl_config(items, config)
 		-- feed the script with CURL config
 		for key, item in pairs(items) do
 			-- config record
-			local rec = curl_cfg_fmt:format(xml.decode(item.link), key)
-
-			just(dest:write(rec))
+			just(dest:write(curl_cfg_fmt:format(xml.decode(item.link), key)))
 
 			-- file modification timestamp
 			local fname = Q(app.dirs.cache .. '/' .. key)
@@ -175,7 +180,7 @@ end
 local function cleanup_cache(items)
 	app.info("cleaning up cache")
 
-	local cmd = "find " .. Q(app.dirs.cache) .. " -type f"
+	local cmd = "find " .. Q(app.dirs.cache) .. " -maxdepth 1 -type f"
 
 	with(just(io.popen(cmd)), io.close, function(src)
 		local count = 0
@@ -187,16 +192,21 @@ local function cleanup_cache(items)
 			if not items[key] then
 				local ok, err = os.remove(pathname)
 
-				if not ok then
+				if ok then
+					count = count + 1
+				else
 					app.warn("could not remove %q: %s", key, err)
 				end
-
-				count = count + 1
 			end
 		end
 
 		app.info("removed %d items from cache", count)
 	end)
+end
+
+-- write to STDOUT
+local function write_out(...)
+	return just(io.stdout:write(...))
 end
 
 -- RSS header
@@ -215,32 +225,27 @@ local function write_rss(items)
 	app.info("writing RSS")
 
 	-- header
-	just(io.stdout:write(rss_header))
+	write_out(rss_header)
 
 	-- news items
 	for key, item in pairs(items) do
-		just(io.stdout:write("  <item>\n   <title>", item.title,
-							 "</title>\n   <link>", item.link,
-							 "</link>\n   <guid>", item.guid,
-							 "</guid>\n   <pubDate>", item.ts,
-							 "</pubDate>\n   <description>"))
+		write_out("  <item>\n   <title>", item.title,
+				  "</title>\n   <link>", item.link,
+				  "</link>\n   <guid>", item.guid,
+				  "</guid>\n   <pubDate>", item.ts,
+				  "</pubDate>\n   <description>")
 
 		-- read description
-		local fname = app.dirs.cache .. '/' .. key
-		local text = with(just(io.open(fname)), io.close, function(src)
-						return src:read("a")
-					 end)
+		local text = read_all_file(app.dirs.cache .. '/' .. key)
 
 		-- format description
-		text = "&lt;p&gt;"
-			.. text:trim():gsub("\n\n+", "&lt;/p&gt;\n&lt;p&gt;")
-			.. "&lt;/p&gt;"
+		text = text:trim():gsub("[ \t]*\n\n+", "&lt;/p&gt;\n&lt;p&gt;")
 
 		-- write description
-		just(io.stdout:write(text, "</description>\n  </item>\n"))
+		write_out("&lt;p&gt;", text, "&lt;/p&gt;</description>\n  </item>\n")
 	end
 
-	just(io.stdout:write(" </channel>\n</rss>\n"))
+	write_out(" </channel>\n</rss>\n")
 end
 
 -- application entry point
