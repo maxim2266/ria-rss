@@ -108,7 +108,7 @@ local function write_extractor_script(fname)
 	app.info("writing extractor script to %q", fname)
 
 	with(just(io.open(fname, "w")), io.close, function(dest)
-		return dest:write(extractor_script)
+		just(dest:write(extractor_script))
 	end)
 end
 
