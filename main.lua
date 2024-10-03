@@ -67,6 +67,40 @@ local function read_rss() --> items: { news_key -> news_item }
 	return items
 end
 
+-- CURL config record format
+local curl_cfg_fmt = [=[
+next
+url = "%s"
+compressed
+output = "%s"
+write-out = "%%{http_code} %%{filename_effective}\n"
+header = "Accept: text/html"
+header = "User-Agent: ]=] .. app.name .. '/' .. app.version .. '"\n'
+
+-- CURL configuration writer
+local function write_curl_config(items, config)
+	app.info("writing CURL config to %q", config)
+
+	with(just(io.open(config, "w")), io.close, function(dest)
+		for key, item in pairs(items) do
+			-- main config record
+			just(dest:write(curl_cfg_fmt:format(xml.decode(item.link), key)))
+
+			-- file modification timestamp
+			local fname = Q(app.dirs.cache .. '/' .. key)
+			local src = io.popen("date -uRr " .. fname .. " 2>/dev/null")
+			local ts = src:read("a")
+
+			-- If-Modified-Since header
+			if src:close() then
+				ts = ts:gsub("%+0+%s*$", "GMT")
+
+				just(dest:write('header = "If-Modified-Since: ', ts, '"\n'))
+			end
+		end
+	end)
+end
+
 -- extractor script
 local extractor_script = [=[
 set -eo pipefail
@@ -112,41 +146,6 @@ local function write_extractor_script(fname)
 	end)
 end
 
--- CURL config record format
-local curl_cfg_fmt = [=[
-next
-url = "%s"
-compressed
-output = "%s"
-write-out = "%%{http_code} %%{filename_effective}\n"
-header = "Accept: text/html"
-header = "User-Agent: ]=] .. app.name .. '/' .. app.version .. '"\n'
-
--- CURL configuration maker
-local function write_curl_config(items, config)
-	app.info("writing CURL config to %q", config)
-
-	with(just(io.open(config, "w")), io.close, function(dest)
-		-- feed the script with CURL config
-		for key, item in pairs(items) do
-			-- config record
-			just(dest:write(curl_cfg_fmt:format(xml.decode(item.link), key)))
-
-			-- file modification timestamp
-			local fname = Q(app.dirs.cache .. '/' .. key)
-			local src = io.popen("date -uRr " .. fname .. " 2>/dev/null")
-			local ts = src:read("a")
-
-			-- If-Modified-Since header
-			if src:close() then
-				ts = ts:gsub("%+0+%s*$", "GMT")
-
-				just(dest:write('header = "If-Modified-Since: ', ts, '"\n'))
-			end
-		end
-	end)
-end
-
 -- update news descriptions
 local function update_descriptions(items)
 	with_temp_dir(function(tmp)
@@ -157,6 +156,7 @@ local function update_descriptions(items)
 
 		app.info("updating cache in %q", app.dirs.cache)
 
+		-- invoke script
 		local cmd = "bash " .. Q(script) .. ' ' .. Q(app.name) .. ' ' .. Q(app.dirs.cache)
 		local updated, skipped = 0, 0
 
@@ -245,6 +245,7 @@ local function write_rss(items)
 		write_out("&lt;p&gt;", text, "&lt;/p&gt;</description>\n  </item>\n")
 	end
 
+	-- footer
 	write_out(" </channel>\n</rss>\n")
 end
 
