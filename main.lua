@@ -180,28 +180,23 @@ end
 local function cleanup_cache(items)
 	app.info("cleaning up cache")
 
-	local cmd = "find " .. Q(app.dirs.cache) .. " -maxdepth 1 -type f"
+	local cmd = "find " .. Q(app.dirs.cache) .. " -maxdepth 1 -type f -print0"
+	local s = read_all(just(io.popen(cmd)))
+	local count = 0
 
-	with(just(io.popen(cmd)), io.close, function(src)
-		local count = 0
+	for pathname in s:gmatch("[^\0]+") do
+		if not items[pathname:match("[^/]+$")] then
+			local ok, err = os.remove(pathname)
 
-		-- remove all files not within the current set
-		for pathname in src:lines() do
-			local key = pathname:match("[^/]+$")
-
-			if not items[key] then
-				local ok, err = os.remove(pathname)
-
-				if ok then
-					count = count + 1
-				else
-					app.warn("could not remove %q: %s", key, err)
-				end
+			if ok then
+				count = count + 1
+			else
+				app.warn("could not remove %q: %s", pathname, err)
 			end
 		end
+	end
 
-		app.info("removed %d items from cache", count)
-	end)
+	app.info("removed %d items from cache", count)
 end
 
 -- write to STDOUT
