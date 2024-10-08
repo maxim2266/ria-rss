@@ -17,15 +17,30 @@ local function non_empty(s) --> string
 	return s
 end
 
+-- RSS URL
+local URL = "https://ria.ru/export/rss2/archive/index.xml"
+
 -- read RSS feed
-local function read_rss() --> items: { news_key -> news_item }
-	-- read content from STDIN
-	local cmd = "xmllint --nonet --noblanks --nocdata --xpath '//item' -"
-	local rss = read_all(just(io.popen(cmd)))
+local function read_rss(tmp) --> items: { news_key -> news_item }
+	app.info("downloading RSS feed")
+
+	-- download their RSS feed
+	local rss = Q(tmp .. "/rss.xml")
+	local cmd = "curl -sS --compressed --write-out '%{http_code}' -o " .. rss
+			 .. " -H 'Accept: application/rss+xml' -H 'User-Agent: "
+			 .. app.name .. '/' .. app.version .. "' '" .. URL .. "'"
+
+	local code = read_all(just(io.popen(cmd)))
+
+	if code ~= "200" then
+		app.fail("downloader returned HTTP code %q", code)
+	end
+
+	-- read RSS XML
+	cmd = "xmllint --nonet --noblanks --nocdata --xpath '//item' " .. rss
+	rss = read_all(just(io.popen(cmd))):trim()
 
 	-- check what we've got
-	rss = rss:trim()
-
 	if #rss == 0 then
 		app.fail("empty input")
 	end
@@ -113,7 +128,7 @@ cd "$data_dir"
 prog="$1"
 dest="$2"
 
-curl --parallel-max 5 -sSZK ../curl.config | while read -r code fname
+curl --parallel-max 5 --parallel-immediate -sSZK ../curl.config | while read -r code fname
 do
 	case $code in
 		200)
@@ -147,8 +162,9 @@ local function write_extractor_script(fname)
 end
 
 -- update news descriptions
-local function update_descriptions(items)
-	with_temp_dir(function(tmp)
+local function update_descriptions()
+	return with_temp_dir(function(tmp)
+		local items = read_rss(tmp)
 		local script = tmp .. "/script"
 
 		write_extractor_script(script)
@@ -160,7 +176,7 @@ local function update_descriptions(items)
 		local cmd = "bash " .. Q(script) .. ' ' .. Q(app.name) .. ' ' .. Q(app.dirs.cache)
 		local updated, skipped = 0, 0
 
-		-- have to employ this trick just for counting pages, sorry
+		-- read script output for stats
 		with(just(io.popen(cmd)), io.close, function(src)
 			for l in src:lines() do
 				if l == "+" then
@@ -173,6 +189,8 @@ local function update_descriptions(items)
 
 		app.info("processed %d pages: %d updated and %d were up to date",
 				 updated + skipped, updated, skipped)
+
+		return items
 	end)
 end
 
@@ -246,9 +264,8 @@ end
 
 -- application entry point
 local function main()
-	local items = read_rss()
+	local items = update_descriptions()
 
-	update_descriptions(items)
 	cleanup_cache(items)
 	write_rss(items)
 
