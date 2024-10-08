@@ -8,6 +8,11 @@ local function read_all_file(fname)
 	return read_all(just(io.open(fname)))
 end
 
+-- read all output of the given shell command
+local function read_all_cmd(cmd)
+	return read_all(just(io.popen(cmd)))
+end
+
 -- ensure string is not nil or empty
 local function non_empty(s) --> string
 	if not s or #s == 0 then
@@ -30,7 +35,7 @@ local function read_rss(tmp) --> items: { news_key -> news_item }
 			 .. " -H 'Accept: application/rss+xml' -H 'User-Agent: "
 			 .. app.name .. '/' .. app.version .. "' '" .. URL .. "'"
 
-	local code = read_all(just(io.popen(cmd)))
+	local code = read_all_cmd(cmd)
 
 	if code ~= "200" then
 		app.fail("downloader returned HTTP code %q", code)
@@ -38,7 +43,7 @@ local function read_rss(tmp) --> items: { news_key -> news_item }
 
 	-- read RSS XML
 	cmd = "xmllint --nonet --noblanks --nocdata --xpath '//item' " .. rss
-	rss = read_all(just(io.popen(cmd))):trim()
+	rss = read_all_cmd(cmd):trim()
 
 	-- check what we've got
 	if #rss == 0 then
@@ -199,7 +204,7 @@ local function cleanup_cache(items)
 	app.info("cleaning up cache")
 
 	local cmd = "find " .. Q(app.dirs.cache) .. " -maxdepth 1 -type f -print0"
-	local s = read_all(just(io.popen(cmd)))
+	local s = read_all_cmd(cmd)
 	local count = 0
 
 	for pathname in s:gmatch("[^\0]+") do
