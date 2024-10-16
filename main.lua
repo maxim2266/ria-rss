@@ -16,7 +16,7 @@ end
 -- ensure string is not nil or empty
 local function non_empty(s) --> string
 	if not s or #s == 0 then
-		fail("missing required value in a news item (invalid RSS XML?)")
+		app.fail("missing required value in a news item (invalid RSS XML?)")
 	end
 
 	return s
