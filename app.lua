@@ -178,7 +178,7 @@ do
 				-- make sure the directory exists
 				just(os.execute("mkdir -p " .. Q(dir)))
 
-				-- update main table
+				-- update the main table
 				t[k] = dir
 				return dir
 			end

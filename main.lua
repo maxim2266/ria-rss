@@ -222,11 +222,6 @@ local function cleanup_cache(items)
 	app.info("removed %d items from cache", count)
 end
 
--- write to STDOUT
-local function write_out(...)
-	return just(io.stdout:write(...))
-end
-
 -- RSS header
 local rss_header = [=[<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
@@ -241,6 +236,11 @@ local rss_header = [=[<?xml version="1.0" encoding="UTF-8"?>
 -- write XML RSS
 local function write_rss(items)
 	app.info("writing RSS")
+
+	-- write to STDOUT
+	local function write_out(...)
+		return just(io.stdout:write(...))
+	end
 
 	-- header
 	write_out(rss_header)
