@@ -253,14 +253,13 @@ local function write_rss(items)
 				  "</guid>\n   <pubDate>", item.ts,
 				  "</pubDate>\n   <description>")
 
-		-- read description
+		-- load description
 		local text = read_all_file(app.dirs.cache .. '/' .. key)
 
-		-- format description
-		text = text:trim():gsub("[ \t]*\n\n+", "&lt;/p&gt;\n&lt;p&gt;")
-
 		-- write description
-		write_out("&lt;p&gt;", text, "&lt;/p&gt;</description>\n  </item>\n")
+		write_out("&lt;p&gt;",
+				  text:trim():gsub("[ \t]*\n\n+", "&lt;/p&gt;\n&lt;p&gt;"),
+				  "&lt;/p&gt;</description>\n  </item>\n")
 	end
 
 	-- footer
