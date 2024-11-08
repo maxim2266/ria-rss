@@ -242,6 +242,13 @@ local function write_rss(items)
 		return just(io.stdout:write(...))
 	end
 
+	-- read description
+	local function load_desc(key)
+		return read_all_file(app.dirs.cache .. '/' .. key)
+			   :trim()
+			   :gsub("[ \t]*\n\n+", "&lt;/p&gt;\n&lt;p&gt;")
+	end
+
 	-- header
 	write_out(rss_header)
 
@@ -251,14 +258,7 @@ local function write_rss(items)
 				  "</title>\n   <link>", item.link,
 				  "</link>\n   <guid>", item.guid,
 				  "</guid>\n   <pubDate>", item.ts,
-				  "</pubDate>\n   <description>")
-
-		-- load description
-		local text = read_all_file(app.dirs.cache .. '/' .. key)
-
-		-- write description
-		write_out("&lt;p&gt;",
-				  text:trim():gsub("[ \t]*\n\n+", "&lt;/p&gt;\n&lt;p&gt;"),
+				  "</pubDate>\n   <description>&lt;p&gt;", load_desc(key),
 				  "&lt;/p&gt;</description>\n  </item>\n")
 	end
 
