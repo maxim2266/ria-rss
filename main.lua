@@ -139,10 +139,13 @@ do
 		200)
 			hxnormalize -x -d -l 10000000 -s -L "$fname"	\
 			| hxselect -i -c 'div.article__body'	\
-			| hxselect -i 'div[data-type="text"],div[data-type="quote"]'	\
-			| hxremove -i 'div.article__quote-bg,strong'	\
-			| sed -E -e 's|</?[[:alpha:]][^>]*>||g' -e 's/^[[:blank:]]+//' -e 's/\.\.\./…/g'	\
-			| hxunent -b -f > "$dest/$fname"
+			| hxselect -i 'div.article__text,ul.article__list'	\
+			| hxremove -i 'strong,div.article__list-label'	\
+			| sed -E	\
+				-e 's|<a\s[^>]+>||gI; s|</a>||gI'	\
+				-e 's|<div(\s[^>]+)?>|<p>|gI; s|</div>|</p>|gI'	\
+				-e 's|<([[:alpha:]]+)\s+[^>]+>|<\1>|g'	\
+				-e 's|&|\&amp;|g; s|<|\&lt;|g; s|>|\&gt;|g; s|"|\&quot;|g; s|'\''|\&apos;|g' > "$dest/$fname"
 
 			echo '+'
 			;;
@@ -242,13 +245,6 @@ local function write_rss(items)
 		return just(io.stdout:write(...))
 	end
 
-	-- read description
-	local function load_desc(key)
-		return read_all_file(app.dirs.cache .. '/' .. key)
-			   :trim()
-			   :gsub("[ \t]*\n\n+", "&lt;/p&gt;\n&lt;p&gt;")
-	end
-
 	-- header
 	write_out(rss_header)
 
@@ -258,8 +254,8 @@ local function write_rss(items)
 				  "</title>\n   <link>", item.link,
 				  "</link>\n   <guid>", item.guid,
 				  "</guid>\n   <pubDate>", item.ts,
-				  "</pubDate>\n   <description>&lt;p&gt;", load_desc(key),
-				  "&lt;/p&gt;</description>\n  </item>\n")
+				  "</pubDate>\n   <description>", read_all_file(app.dirs.cache .. '/' .. key),
+				  "</description>\n  </item>\n")
 	end
 
 	-- footer
