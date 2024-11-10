@@ -27,7 +27,7 @@ local URL = "https://ria.ru/export/rss2/archive/index.xml"
 
 -- read RSS feed
 local function read_rss(tmp) --> items: { news_key -> news_item }
-	app.info("downloading RSS feed")
+	app.info("downloading RSS feed from " .. URL)
 
 	-- download their RSS feed
 	local rss = Q(tmp .. "/rss.xml")
@@ -145,7 +145,8 @@ do
 				-e 's|<a\s[^>]+>||gI; s|</a>||gI'	\
 				-e 's|<div(\s[^>]+)?>|<p>|gI; s|</div>|</p>|gI'	\
 				-e 's|<([[:alpha:]]+)\s+[^>]+>|<\1>|g'	\
-				-e 's|&|\&amp;|g; s|<|\&lt;|g; s|>|\&gt;|g; s|"|\&quot;|g; s|'\''|\&apos;|g' > "$dest/$fname"
+				-e 's|&|\&amp;|g; s|<|\&lt;|g; s|>|\&gt;|g; s|"|\&quot;|g; s|'\''|\&apos;|g'	\
+				-e 's|\.\.\.|…|g' > "$dest/$fname"
 
 			echo '+'
 			;;
