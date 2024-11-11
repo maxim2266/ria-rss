@@ -140,13 +140,7 @@ do
 			hxnormalize -x -d -l 10000000 -s -L "$fname"	\
 			| hxselect -i -c 'div.article__body'	\
 			| hxselect -i 'div.article__text,ul.article__list'	\
-			| hxremove -i 'strong,div.article__list-label'	\
-			| sed -E	\
-				-e 's|<a\s[^>]+>||gI; s|</a>||gI'	\
-				-e 's|<div(\s[^>]+)?>|<p>|gI; s|</div>|</p>|gI'	\
-				-e 's|<([[:alpha:]]+)\s+[^>]+>|<\1>|g'	\
-				-e 's|&|\&amp;|g; s|<|\&lt;|g; s|>|\&gt;|g; s|"|\&quot;|g; s|'\''|\&apos;|g'	\
-				-e 's|\.\.\.|…|g' > "$dest/$fname"
+			| hxremove -i 'strong,div.article__list-label' > "$dest/$fname"
 
 			echo '+'
 			;;
@@ -226,6 +220,47 @@ local function cleanup_cache(items)
 	app.info("removed %d items from cache", count)
 end
 
+-- HTML processing
+local tags = {
+	-- replacements
+	div = "p",
+
+	-- some formatting
+	b = "b",
+	em = "em",
+	i = "i",
+	small = "small",
+	strong = "strong",
+	sub = "sub",
+	sup = "sup",
+	ins = "ins",
+	del = "del",
+	mark = "mark",
+	br = "br",
+
+	-- lists
+	ul = "ul",
+	ol = "ol",
+	li = "li",
+
+	-- paragraphs
+	p = "p",
+}
+
+-- load news description
+local function load_desc(fname) --> string
+	local s = read_all_file(fname)
+
+	s = s:gsub("<(%a+)%s+[^>]*>", "<%1>")	-- remove attributes
+		 :gsub("(</?)(%a+)>",				-- retain or substitute tags
+			   function(p, t)
+				   t = tags[t:lower()]; return t and (p .. t .. '>') or ""
+			   end)
+		 :gsub("%.%.%.", '…')	-- normalise ellipsis
+
+	return xml.encode(s)
+end
+
 -- RSS header
 local rss_header = [=[<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
@@ -255,7 +290,7 @@ local function write_rss(items)
 				  "</title>\n   <link>", item.link,
 				  "</link>\n   <guid>", item.guid,
 				  "</guid>\n   <pubDate>", item.ts,
-				  "</pubDate>\n   <description>", read_all_file(app.dirs.cache .. '/' .. key),
+				  "</pubDate>\n   <description>", load_desc(app.dirs.cache .. '/' .. key),
 				  "</description>\n  </item>\n")
 	end
 
@@ -265,6 +300,10 @@ end
 
 -- application entry point
 local function main()
+	if not os.setlocale("C.utf8") then
+		app.fail("cannot set \"C.utf8\" locale")
+	end
+
 	local items = update_descriptions()
 
 	cleanup_cache(items)
