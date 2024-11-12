@@ -220,32 +220,19 @@ local function cleanup_cache(items)
 	app.info("removed %d items from cache", count)
 end
 
--- HTML processing
-local tags = {
-	-- replacements
-	div = "p",
+-- HTML tag map
+local function make_tag_map(src)
+	local res = { div = "p" }	-- substitution
 
-	-- some formatting
-	b = "b",
-	em = "em",
-	i = "i",
-	small = "small",
-	strong = "strong",
-	sub = "sub",
-	sup = "sup",
-	ins = "ins",
-	del = "del",
-	mark = "mark",
-	br = "br",
+	-- tags to retain
+	for t in src:gmatch("%a+") do
+		res[t] = t
+	end
 
-	-- lists
-	ul = "ul",
-	ol = "ol",
-	li = "li",
+	return res
+end
 
-	-- paragraphs
-	p = "p",
-}
+local tags = make_tag_map("b, em, i, small, strong, sub, sup, ins, del, mark, br, ul, ol, li, p")
 
 -- load news description
 local function load_desc(key) --> string
