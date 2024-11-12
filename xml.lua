@@ -17,6 +17,7 @@ do
 		_ent_map_encode[v] = k
 	end
 
+	-- [global] XML functions
 	xml = {
 		decode = function(s) --> string
 			return s:gsub("&%w%w+;", _ent_map_decode)

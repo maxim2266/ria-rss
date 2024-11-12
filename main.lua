@@ -248,8 +248,8 @@ local tags = {
 }
 
 -- load news description
-local function load_desc(fname) --> string
-	local s = read_all_file(fname)
+local function load_desc(key) --> string
+	local s = read_all_file(app.dirs.cache .. '/' .. key)
 
 	s = s:gsub("<(%a+)%s+[^>]*>", "<%1>")	-- remove attributes
 		 :gsub("(</?)(%a+)>",				-- retain or substitute tags
@@ -290,7 +290,7 @@ local function write_rss(items)
 				  "</title>\n   <link>", item.link,
 				  "</link>\n   <guid>", item.guid,
 				  "</guid>\n   <pubDate>", item.ts,
-				  "</pubDate>\n   <description>", load_desc(app.dirs.cache .. '/' .. key),
+				  "</pubDate>\n   <description>", load_desc(key),
 				  "</description>\n  </item>\n")
 	end
 
