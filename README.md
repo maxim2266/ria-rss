@@ -1,4 +1,4 @@
-# ria-rss: фильтр для добавления текста новостей к RSS от РИА Новости.
+# ria-rss: программа для добавления текста новостей к RSS от РИА Новости.
 
 [![License: BSD 3 Clause](https://img.shields.io/badge/License-BSD_3--Clause-yellow.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
