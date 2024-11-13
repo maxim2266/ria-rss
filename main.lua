@@ -13,6 +13,11 @@ local function read_all_cmd(cmd)
 	return read_all(just(io.popen(cmd)))
 end
 
+-- write to the file
+local function write_file(fname, fn, ...)
+	return with(just(io.open(fname, "w")), io.close, fn, ...)
+end
+
 -- ensure string is not nil or empty
 local function non_empty(s) --> string
 	if not s or #s == 0 then
@@ -101,7 +106,7 @@ header = "User-Agent: ]=] .. app.name .. '/' .. app.version .. '"\n'
 local function write_curl_config(items, config)
 	app.info("writing CURL config to %q", config)
 
-	with(just(io.open(config, "w")), io.close, function(dest)
+	write_file(config, function(dest)
 		for key, item in pairs(items) do
 			-- main config record
 			just(dest:write(curl_cfg_fmt:format(xml.decode(item.link), key)))
@@ -159,7 +164,7 @@ done
 local function write_extractor_script(fname)
 	app.info("writing extractor script to %q", fname)
 
-	with(just(io.open(fname, "w")), io.close, function(dest)
+	write_file(fname, function(dest)
 		just(dest:write(extractor_script))
 	end)
 end
@@ -232,7 +237,7 @@ local function make_tag_map(src)
 	return res
 end
 
-local tags = make_tag_map("b, em, i, small, strong, sub, sup, ins, del, mark, br, ul, ol, li, p")
+local tags = make_tag_map("b em i small strong sub sup ins del mark br ul ol li p")
 
 -- load news description
 local function load_desc(key) --> string
@@ -259,7 +264,7 @@ local rss_header = [=[<?xml version="1.0" encoding="UTF-8"?>
  <copyright>RIA Novosti</copyright>
 ]=]
 
--- write XML RSS
+-- write RSS XML
 local function write_rss(items)
 	app.info("writing RSS")
 
