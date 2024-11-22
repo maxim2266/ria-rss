@@ -169,6 +169,15 @@ local function write_extractor_script(fname)
 	end)
 end
 
+-- iterate input source line by line;
+-- functions io.lines and file:lines both skip the nearest pcall when interrupted by SIGINT
+-- (see https://stackoverflow.com/questions/79194247/lua-pcall-inconsistency-while-dealing-with-sigint-on-linux)
+local function lines_from(src)
+	return function()
+		return src:read()
+	end
+end
+
 -- update news descriptions
 local function update_descriptions()
 	return with_temp_dir(function(tmp)
@@ -186,7 +195,7 @@ local function update_descriptions()
 
 		-- read script output for stats
 		with(just(io.popen(cmd)), io.close, function(src)
-			for l in src:lines() do
+			for l in lines_from(src) do
 				if l == "+" then
 					updated = updated + 1
 				elseif l == "-" then

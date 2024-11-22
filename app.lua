@@ -14,8 +14,12 @@ end
 
 -- resource handling
 do
-	-- error reporting helper
-	local function _fail(err, code)
+	-- [global] error checker
+	function just(ok, err, code, ...)
+		if ok then
+			return ok, err, code, ...
+		end
+
 		if math.type(code) == "integer" then
 			-- error from os.execute or similar
 			if err == "exit" then
@@ -25,20 +29,11 @@ do
 			end
 
 			if err == "signal" then
-				err = "interrupted with signal " .. code
+				err = "interrupted by signal " .. code
 			end
 		end
 
 		error(err, 0)
-	end
-
-	-- [global] error checker
-	function just(ok, err, code, ...)
-		if ok then
-			return ok, err, code, ...
-		end
-
-		_fail(err, code)
 	end
 
 	-- [global] resource handler
@@ -50,7 +45,7 @@ do
 			end
 
 			pcall(cleanup, resource)
-			_fail(...)
+			just(false, ...)
 		end
 
 		return wrap(pcall(fn, resource, ...))
@@ -69,7 +64,7 @@ do
 
 	-- [global] execute fn with a temporary file name, removing the file in the end
 	function with_temp_file(fn, ...) --> whatever fn returns
-		return with(os.tmpname(), _remove, fn, ...)
+		return with(just(os.tmpname()), _remove, fn, ...)
 	end
 
 	-- remove directory
