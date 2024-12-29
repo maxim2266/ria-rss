@@ -11,15 +11,15 @@ SRC_FILES := app.lua xml.lua main.lua
 BIN := ria-rss
 
 # Lua
-LUAC := luac5.3
+LUA_VER := 5.3
 
 # all
 all: $(BIN)
 
 # compilation
 $(BIN): $(SRC_FILES)
-	$(LUAC) -s -o $@ $^
-	sed -i '1s|^|\#!/usr/bin/env lua5.3\n|' $@
+	luac$(LUA_VER) -s -o $@ $^
+	sed -i '1s|^|\#!/usr/bin/env lua$(LUA_VER)\n|' $@
 	chmod 0711 $@
 
 # clean up
