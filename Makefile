@@ -13,7 +13,10 @@ BIN := ria-rss
 # Lua
 LUA_VER := 5.3
 
-# all
+# setup
+.DELETE_ON_ERROR:
+
+# default target
 all: $(BIN)
 
 # compilation
